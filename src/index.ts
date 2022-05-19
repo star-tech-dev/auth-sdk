@@ -1,4 +1,4 @@
-import type { Env, MainConfig, Credentials, User } from '../index'
+import type { Env, MainConfig, Credentials, RegisterCredentials, User } from '../index'
 import { handleError, logError } from './utils/errors'
 import { sendRequest } from './api'
 import { Response } from '../index'
@@ -19,17 +19,24 @@ export class Auth {
     this.user = null
   }
 
-  async check () {
-    console.log('checkAuth2', this.isAuthenticated)
+  async check (): Promise<Response> {
+    if (this.env === 'development') {
+      console.log('[auth-sdk][check]')
+    }
+
     return sendRequest({
       method: 'get',
       url: '/check'
     })
   }
 
-  async login (credentials: Credentials): Promise<Response> {
+  async login (credentials: Credentials): Promise<User | Response> {
+    if (this.env === 'development') {
+      console.log('[auth-sdk][login]', credentials)
+    }
+
     if (!credentials || !credentials.username || !credentials.password) {
-      logError('credentials are missing', 'authenticate')
+      logError('credentials are missing', 'login')
       return null
     }
 
@@ -43,11 +50,34 @@ export class Auth {
       return result
     }
 
-    // this.isAuthenticated = true
-    // this.user = {
-    //   username: credentials.username
-    // }
-    // return this.user
+    this.isAuthenticated = true
+    this.user = result.user
+    return this.user
+  }
+
+  async register (credentials: RegisterCredentials): Promise<User | Response> {
+    if (this.env === 'development') {
+      console.log('[auth-sdk][register]', credentials)
+    }
+
+    if (!credentials || !credentials.username || !credentials.password || !credentials.password) {
+      logError('credentials are missing', 'register')
+      return null
+    }
+
+    const result = await sendRequest({
+      method: 'post',
+      url: '/register',
+      data: credentials
+    }).catch(err => handleError(err))
+
+    if (result.error) {
+      return result
+    }
+
+    this.isAuthenticated = true
+    this.user = result.user
+    return this.user
   }
 }
 
