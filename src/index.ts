@@ -24,10 +24,17 @@ export class Auth {
       console.log('[auth-sdk][check]')
     }
 
-    return sendRequest({
+    const result = await sendRequest({
       method: 'get',
       url: '/check'
     })
+
+    if (result.status) {
+      this.isAuthenticated = true
+      this.user = result.data.user
+    }
+
+    return result
   }
 
   async login (credentials: Credentials): Promise<User | Response> {
@@ -78,6 +85,22 @@ export class Auth {
     this.isAuthenticated = true
     this.user = result.user
     return this.user
+  }
+
+  async logout () {
+    if (this.env === 'development') {
+      console.log('[auth-sdk][logout]')
+    }
+
+    const result = await sendRequest({
+      method: 'get',
+      url: '/logout'
+    }).catch(err => handleError(err))
+
+    this.isAuthenticated = false
+    this.user = null
+
+    return result
   }
 }
 
